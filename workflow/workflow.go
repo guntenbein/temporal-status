@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	temporal_status "temporal_starter"
 	"temporal_starter/activity"
 	"time"
 
@@ -8,8 +9,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func StatusWorkflow(ctx workflow.Context, activityName, queueName string, req interface{}) error {
-	ctx = withActivityOptions(ctx, queueName)
+func StatusWorkflow(ctx workflow.Context) error {
+	ctx = withActivityOptions(ctx, temporal_status.WorkflowQueue)
 	err := workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
 	if err != nil {
 		return err

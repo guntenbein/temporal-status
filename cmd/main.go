@@ -11,6 +11,7 @@ import (
 	"temporal_microservices"
 	"temporal_microservices/context/propagators"
 	"temporal_starter"
+	"temporal_starter/activity"
 	"temporal_starter/controller"
 	"temporal_starter/workflow"
 	"time"
@@ -26,7 +27,7 @@ func main() {
 
 	temporalClient := initTemporalClient()
 
-	worker := initWorkflowWorker(temporalClient)
+	worker := initWorker(temporalClient)
 	defer func() {
 		worker.Stop()
 	}()
@@ -63,12 +64,14 @@ func initTemporalClient() client.Client {
 	return temporalClient
 }
 
-func initWorkflowWorker(temporalClient client.Client) worker.Worker {
+func initWorker(temporalClient client.Client) worker.Worker {
 	workerOptions := worker.Options{
-		MaxConcurrentWorkflowTaskExecutionSize: temporal_starter.MaxConcurrentWorkflowSize,
+		MaxConcurrentWorkflowTaskExecutionSize: 10,
+		MaxConcurrentActivityExecutionSize:     10,
 	}
-	worker := worker.New(temporalClient, temporal_starter.WorkflowQueue, workerOptions)
+	worker := worker.New(temporalClient, temporal_status.WorkflowQueue, workerOptions)
 	worker.RegisterWorkflow(workflow.StatusWorkflow)
+	worker.RegisterActivity(activity.LongTermActivity)
 
 	err := worker.Start()
 	if err != nil {
@@ -80,7 +83,7 @@ func initWorkflowWorker(temporalClient client.Client) worker.Worker {
 
 func initHTTPServer(workflowStarterHandler func(http.ResponseWriter, *http.Request)) *http.Server {
 	router := mux.NewRouter()
-	router.Methods(http.MethodPost).Path("/").HandlerFunc(workflowStarterHandler)
+	router.Methods(http.MethodPost).Path("/workflow").HandlerFunc(workflowStarterHandler)
 	server := &http.Server{
 		Addr:         net.JoinHostPort("localhost", "8082"),
 		Handler:      router,

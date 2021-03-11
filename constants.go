@@ -1,6 +1,5 @@
-package temporal_starter
+package temporal_status
 
 const (
-	WorkflowQueue             = "StatusWorkflowQueue"
-	MaxConcurrentWorkflowSize = 100
+	WorkflowQueue = "StatusWorkflowQueue"
 )
