@@ -13,15 +13,14 @@ type SimpleHeartbeat struct {
 
 func StartHeartbeat(ctx context.Context, period time.Duration) (h *SimpleHeartbeat) {
 	h = &SimpleHeartbeat{make(chan struct{})}
-	timer := time.NewTimer(period)
 	go func() {
 		for {
 			select {
 			case <-h.cancelc:
-				timer.Stop()
 				return
-			case <-timer.C:
+			default:
 				activity.RecordHeartbeat(ctx)
+				time.Sleep(period)
 			}
 		}
 	}()
