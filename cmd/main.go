@@ -32,7 +32,9 @@ func main() {
 		worker.Stop()
 	}()
 
-	httpServer := initHTTPServer(controller.StartWorkflowHandleFunc(temporalClient))
+	httpServer := initHTTPServer(
+		controller.StartWorkflowHandleFunc(temporalClient),
+		controller.WorkflowStatusHandleFunc(temporalClient))
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
@@ -81,9 +83,11 @@ func initWorker(temporalClient client.Client) worker.Worker {
 	return worker
 }
 
-func initHTTPServer(workflowStarterHandler func(http.ResponseWriter, *http.Request)) *http.Server {
+func initHTTPServer(workflowStarterHandler func(http.ResponseWriter, *http.Request),
+	workflowStatusHandler func(http.ResponseWriter, *http.Request)) *http.Server {
 	router := mux.NewRouter()
 	router.Methods(http.MethodPost).Path("/workflow").HandlerFunc(workflowStarterHandler)
+	router.Methods(http.MethodGet).Path("/workflow/{workflowId}/status").HandlerFunc(workflowStatusHandler)
 	server := &http.Server{
 		Addr:         net.JoinHostPort("localhost", "8082"),
 		Handler:      router,
