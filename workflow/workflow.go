@@ -9,16 +9,33 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func StatusWorkflow(ctx workflow.Context) error {
-	ctx = withActivityOptions(ctx, temporal_status.WorkflowQueue)
-	err := workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
+func StatusWorkflow(ctx workflow.Context) (err error) {
+	status := "STARTED"
+	err = workflow.SetQueryHandler(ctx,
+		temporal_status.WorkflowQueryTypeStatus, func(input []byte) (temporal_status.Status, error) {
+			return temporal_status.Status{Message: status}, nil
+		})
 	if err != nil {
-		return err
+		return
 	}
+	defer func() {
+		status = "FINISHED"
+	}()
+
+	ctx = withActivityOptions(ctx, temporal_status.WorkflowQueue)
+	status = "PROCESSING ACTIVITY 1"
 	err = workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
 	if err != nil {
-		return err
+		return
 	}
+
+	status = "PROCESSING ACTIVITY 2"
+	err = workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	status = "PROCESSING ACTIVITY 3"
 	return workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
 }
 

@@ -1,5 +1,6 @@
 package temporal_status
 
 const (
-	WorkflowQueue = "StatusWorkflowQueue"
+	WorkflowQueue           = "StatusWorkflowQueue"
+	WorkflowQueryTypeStatus = "status"
 )

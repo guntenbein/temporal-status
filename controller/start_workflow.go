@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	temporal_status "temporal_starter"
@@ -12,29 +13,37 @@ import (
 
 func StartWorkflowHandleFunc(temporalClient client.Client) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, req *http.Request) {
-		err := executeWorkflow(context.Background(), temporalClient)
+		weID, err := executeWorkflow(context.Background(), temporalClient)
 		if err != nil {
 			writeError(rw, err)
 			return
 		}
-		writeOk(rw)
+		writeOk(rw, weID)
 	}
 }
 
-func executeWorkflow(ctx context.Context, temporalClient client.Client) error {
+func executeWorkflow(ctx context.Context, temporalClient client.Client) (workflowExecutionID string, err error) {
 	workflowOptions := client.StartWorkflowOptions{
 		TaskQueue: temporal_status.WorkflowQueue,
 	}
-	_, err := temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflow.StatusWorkflow)
+	we, err := temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflow.StatusWorkflow)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return we.GetID(), nil
 }
 
-func writeOk(rw http.ResponseWriter) {
+func writeOk(rw http.ResponseWriter, workflowID string) {
+	body, err := json.Marshal(workflowID)
+	if err != nil {
+		log.Print(err)
+	}
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
+	_, err = rw.Write(body)
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func writeError(rw http.ResponseWriter, err error) {
