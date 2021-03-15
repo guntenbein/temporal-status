@@ -24,19 +24,19 @@ func StatusWorkflow(ctx workflow.Context) (err error) {
 
 	ctx = withActivityOptions(ctx, temporal_status.WorkflowQueue)
 	status = "PROCESSING ACTIVITY 1"
-	err = workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, activity.Handler{}.LongTermActivity).Get(ctx, nil)
 	if err != nil {
 		return
 	}
 
 	status = "PROCESSING ACTIVITY 2"
-	err = workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, activity.Handler{}.LongTermActivity).Get(ctx, nil)
 	if err != nil {
 		return
 	}
 
 	status = "PROCESSING ACTIVITY 3"
-	return workflow.ExecuteActivity(ctx, activity.LongTermActivity).Get(ctx, nil)
+	return workflow.ExecuteActivity(ctx, activity.Handler{}.LongTermActivity).Get(ctx, nil)
 }
 
 func withActivityOptions(ctx workflow.Context, queue string) workflow.Context {

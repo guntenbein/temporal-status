@@ -13,6 +13,7 @@ import (
 	"temporal_starter"
 	"temporal_starter/activity"
 	"temporal_starter/controller"
+	"temporal_starter/signals"
 	"temporal_starter/workflow"
 	"time"
 
@@ -73,7 +74,7 @@ func initWorker(temporalClient client.Client) worker.Worker {
 	}
 	worker := worker.New(temporalClient, temporal_status.WorkflowQueue, workerOptions)
 	worker.RegisterWorkflow(workflow.StatusWorkflow)
-	worker.RegisterActivity(activity.LongTermActivity)
+	worker.RegisterActivity(activity.MakeHandler(signals.MakePercentageSignaller(temporalClient)).LongTermActivity)
 
 	err := worker.Start()
 	if err != nil {
