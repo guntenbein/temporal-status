@@ -23,5 +23,5 @@ func (p Percentage) Percentage(ctx context.Context, percentage int32) error {
 		return fmt.Errorf("wrong percentage value: %d", percentage)
 	}
 	we := activity.GetInfo(ctx).WorkflowExecution
-	return p.client.SignalWorkflow(ctx, we.RunID, we.ID, PercentageSignalName, percentage)
+	return p.client.SignalWorkflow(ctx, we.ID, we.RunID, PercentageSignalName, percentage)
 }

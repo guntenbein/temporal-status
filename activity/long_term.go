@@ -25,7 +25,7 @@ func (h Handler) LongTermActivity(ctx context.Context) error {
 	defer h.reportPercentage(ctx, 100)
 	iterations := 10
 	for i := 0; i < iterations; i++ {
-		h.reportPercentage(ctx, int32(i/iterations*100))
+		h.reportPercentage(ctx, int32(i*100/iterations))
 		time.Sleep(time.Second)
 	}
 	return nil

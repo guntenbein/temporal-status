@@ -1,8 +1,10 @@
 package workflow
 
 import (
+	"sync/atomic"
 	temporal_status "temporal_starter"
 	"temporal_starter/activity"
+	"temporal_starter/signals"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -11,9 +13,10 @@ import (
 
 func StatusWorkflow(ctx workflow.Context) (err error) {
 	status := "STARTED"
+	var percentage int32
 	err = workflow.SetQueryHandler(ctx,
 		temporal_status.WorkflowQueryTypeStatus, func(input []byte) (temporal_status.Status, error) {
-			return temporal_status.Status{Message: status}, nil
+			return temporal_status.Status{Message: status, Percentage: atomic.LoadInt32(&percentage)}, nil
 		})
 	if err != nil {
 		return
@@ -21,6 +24,14 @@ func StatusWorkflow(ctx workflow.Context) (err error) {
 	defer func() {
 		status = "FINISHED"
 	}()
+	workflow.Go(ctx, func(ctx workflow.Context) {
+		for {
+			var pcn int32
+			sigChan := workflow.GetSignalChannel(ctx, signals.PercentageSignalName)
+			sigChan.Receive(ctx, &pcn)
+			atomic.StoreInt32(&percentage, pcn)
+		}
+	})
 
 	ctx = withActivityOptions(ctx, temporal_status.WorkflowQueue)
 	status = "PROCESSING ACTIVITY 1"

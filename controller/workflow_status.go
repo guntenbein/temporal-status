@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	temporal_status "temporal_starter"
 
@@ -34,6 +35,6 @@ func WorkflowStatusHandleFunc(temporalClient client.Client) func(http.ResponseWr
 			writeError(rw, err, http.StatusInternalServerError)
 			return
 		}
-		writeOk(rw, status.Message)
+		writeOk(rw, fmt.Sprintf("%s: %d%%", status.Message, status.Percentage))
 	}
 }
