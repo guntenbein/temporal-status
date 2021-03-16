@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"log"
 	"sync/atomic"
 	temporal_status "temporal_starter"
 	"temporal_starter/activity"
@@ -10,6 +11,8 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
+
+const finish = 1
 
 func StatusWorkflow(ctx workflow.Context) (err error) {
 	status := "STARTED"
@@ -24,28 +27,43 @@ func StatusWorkflow(ctx workflow.Context) (err error) {
 	defer func() {
 		status = "FINISHED"
 	}()
+
+	var finishFlag int32
 	workflow.Go(ctx, func(ctx workflow.Context) {
-		for {
+		err := workflow.Await(ctx, func() bool {
 			var pcn int32
-			workflow.GetSignalChannel(ctx, signals.PercentageSignalName).Receive(ctx, &pcn)
-			atomic.StoreInt32(&percentage, pcn)
+			ok := workflow.GetSignalChannel(ctx, signals.PercentageSignalName).ReceiveAsync(&pcn)
+			if ok {
+				atomic.StoreInt32(&percentage, pcn)
+			}
+			return atomic.LoadInt32(&finishFlag) == finish
+		})
+		if err != nil {
+			log.Print(err.Error())
 		}
 	})
+	defer func() {
+		atomic.StoreInt32(&finishFlag, 1)
+	}()
 
+	return statusWorkflow(ctx, &status)
+}
+
+func statusWorkflow(ctx workflow.Context, status *string) (err error) {
 	ctx = withActivityOptions(ctx, temporal_status.WorkflowQueue)
-	status = "PROCESSING ACTIVITY 1"
+	*status = "PROCESSING ACTIVITY 1"
 	err = workflow.ExecuteActivity(ctx, activity.Handler{}.LongTermActivity).Get(ctx, nil)
 	if err != nil {
 		return
 	}
 
-	status = "PROCESSING ACTIVITY 2"
+	*status = "PROCESSING ACTIVITY 2"
 	err = workflow.ExecuteActivity(ctx, activity.Handler{}.LongTermActivity).Get(ctx, nil)
 	if err != nil {
 		return
 	}
 
-	status = "PROCESSING ACTIVITY 3"
+	*status = "PROCESSING ACTIVITY 3"
 	return workflow.ExecuteActivity(ctx, activity.Handler{}.LongTermActivity).Get(ctx, nil)
 }
 
