@@ -27,8 +27,7 @@ func StatusWorkflow(ctx workflow.Context) (err error) {
 	workflow.Go(ctx, func(ctx workflow.Context) {
 		for {
 			var pcn int32
-			sigChan := workflow.GetSignalChannel(ctx, signals.PercentageSignalName)
-			sigChan.Receive(ctx, &pcn)
+			workflow.GetSignalChannel(ctx, signals.PercentageSignalName).Receive(ctx, &pcn)
 			atomic.StoreInt32(&percentage, pcn)
 		}
 	})
