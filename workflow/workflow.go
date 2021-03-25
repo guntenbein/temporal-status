@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"log"
 	"sync/atomic"
 	temporal_status "temporal_starter"
 	"temporal_starter/activity"
@@ -12,13 +11,15 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-const finish = 1
-
 func StatusWorkflow(ctx workflow.Context) (err error) {
 	status := "STARTED"
 	var percentage int32
 	err = workflow.SetQueryHandler(ctx,
 		temporal_status.WorkflowQueryTypeStatus, func(input []byte) (temporal_status.Status, error) {
+			var percentageTmp int32
+			for workflow.GetSignalChannel(ctx, signals.PercentageSignalName).ReceiveAsync(&percentageTmp) {
+				percentage = percentageTmp
+			}
 			return temporal_status.Status{Message: status, Percentage: atomic.LoadInt32(&percentage)}, nil
 		})
 	if err != nil {
@@ -26,24 +27,6 @@ func StatusWorkflow(ctx workflow.Context) (err error) {
 	}
 	defer func() {
 		status = "FINISHED"
-	}()
-
-	var finishFlag int32
-	workflow.Go(ctx, func(ctx workflow.Context) {
-		err := workflow.Await(ctx, func() bool {
-			var pcn int32
-			ok := workflow.GetSignalChannel(ctx, signals.PercentageSignalName).ReceiveAsync(&pcn)
-			if ok {
-				atomic.StoreInt32(&percentage, pcn)
-			}
-			return atomic.LoadInt32(&finishFlag) == finish
-		})
-		if err != nil {
-			log.Print(err.Error())
-		}
-	})
-	defer func() {
-		atomic.StoreInt32(&finishFlag, 1)
 	}()
 
 	return statusWorkflow(ctx, &status)
