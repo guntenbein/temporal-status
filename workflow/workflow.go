@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"sync/atomic"
 	temporal_status "temporal_starter"
 	"temporal_starter/activity"
 	"temporal_starter/signals"
@@ -20,7 +19,7 @@ func StatusWorkflow(ctx workflow.Context) (err error) {
 			for workflow.GetSignalChannel(ctx, signals.PercentageSignalName).ReceiveAsync(&percentageTmp) {
 				percentage = percentageTmp
 			}
-			return temporal_status.Status{Message: status, Percentage: atomic.LoadInt32(&percentage)}, nil
+			return temporal_status.Status{Message: status, Percentage: percentage}, nil
 		})
 	if err != nil {
 		return
